@@ -1,0 +1,62 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <title>Login</title>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    </head>
+    <body>
+        <!-- Hero -->
+        <section class="hero is-link">
+            <div class="hero-body" align="center">
+                <h1 class="title">
+                    Login
+                </h1>
+                <h2 class="subtitle">
+                    Please login to continue
+                </h2>
+            </div>
+        </section>
+        <section class="section">
+            <div class="container">
+                <div class="columns is-centered">
+                    <div class="column is-half">
+                        {% if error_message %}
+                            <div class="notification is-danger is-light">
+                                {{ error_message }}
+                            </div>
+                        {% endif %}
+                        <div class="box">
+                            <form action="/login" method="POST">
+                                <div class="field">
+                                    <label class="label">Username</label>
+                                    <div class="control">
+                                        <input class="input" type="text" name="username" placeholder="Username or Email">
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <label class="label">Password</label>
+                                    <div class="control">
+                                        <input class="input" type="password" name="password" placeholder="Password">
+                                    </div>
+                                </div>
+                                <div class="columns">
+                                    <div class="column">
+                                        <div class="control">
+                                            {% csrf_token %}
+                                            <button class="button is-link is-fullwidth">Login</button>
+                                        </div>
+                                    </div>
+                                    <div class="column pt-5">
+                                        <div class="control">
+                                            Don't have an account? <a href="/register">Register</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </body>
+</html>

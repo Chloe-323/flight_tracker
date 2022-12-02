@@ -1,0 +1,63 @@
+{% extends "website/base.html" %}
+{% block content %}
+            <div class="container">
+                <div class="columns is-centered">
+                    <div class="column is-half">
+                        <div class="box">
+                            <h1 class="title" align="center">Advanced Search</h1>
+                        <form action="/search" method="GET">
+                            <div class="columns">
+                                <div class="column">
+                                    <div class="field">
+                                        <input class="input" type="text" name="src" placeholder="Source">
+                                    </div>
+                                    <div class="field">
+                                        <input class="input" type="text" name="flight_no" placeholder="Flight Number">
+                                    </div>
+                                </div>
+                                <div class="column">
+                                    <div class="field">
+                                        <input class="input" type="text" name="dest" placeholder="Destination">
+                                    </div>
+                                    <div class="field">
+                                        <input class="input" type="text" name="airline" placeholder="Airline">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="field">
+                                <input class="input" type="date" name="date" placeholder="Date">
+                            </div>
+                            <div class="field">
+                                <div class="control">
+                                    <button class="button is-link is-fullwidth">Search</button>
+                                </div>
+                            </div>
+                        </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <hr>
+    {% if flights %}
+        <table class="table is-fullwidth pt-5">
+            <thead>
+                <tr>
+                    <th>Airline</th>
+                    <th>Flight Number</th>
+                    <th>Origin</th>
+                    <th>Destination</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for flight in flights %}
+                    <tr>
+                        <td>{{ flight.airline }}</td>
+                        <td>{{ flight.flight_no }}</td>
+                        <td>{{ flight.origin }}</td>
+                        <td>{{ flight.destination }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+{% endblock %}

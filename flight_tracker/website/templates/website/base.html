@@ -1,0 +1,97 @@
+<!DOCTYPE HTML>
+<html class="has-navbar-fixed-top">
+    <head>
+        <title>{{ title }}</title>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    </head>
+    <body>
+        <!-- Navbar -->
+        <nav class="navbar is-fixed-top" role="navigation" aria-label="main navigation">
+          <div class="navbar-brand">
+            <a class="navbar-item" href="/">
+              <img src="static/images/logo.png" width="112" height="28">
+            </a>
+
+            <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbarBasicExample">
+              <span aria-hidden="true"></span>
+              <span aria-hidden="true"></span>
+              <span aria-hidden="true"></span>
+            </a>
+          </div>
+
+          <div id="navbarBasicExample" class="navbar-menu">
+            <div class="navbar-start">
+              <a class="navbar-item" href="search">
+                  Advanced Search
+              </a>
+
+              <a class="navbar-item">
+                  Help
+              </a>
+
+              <div class="navbar-item has-dropdown is-hoverable">
+                <a class="navbar-link">
+                  More
+                </a>
+
+                <div class="navbar-dropdown">
+                  <a class="navbar-item">
+                    About
+                  </a>
+                  <a class="navbar-item">
+                    Jobs
+                  </a>
+                  <a class="navbar-item">
+                    Contact
+                  </a>
+                  <hr class="navbar-divider">
+                  <a class="navbar-item">
+                    Report an issue
+                  </a>
+                </div>
+              </div>
+              <div class="navbar-item is-expanded pl-5">
+                  <form action="/search" method="GET">
+                      <div class="field has-addons">
+                          <div class="control">
+                              <input class="input" type="text" name="q" placeholder="Search">
+                          </div>
+                          <div class="control">
+                              <button class="button is-link">Search</button>
+                          </div>
+                      </div>
+              </div>
+            </div>
+
+            <div class="navbar-end">
+              <div class="navbar-item">
+                <div class="buttons">
+                  <a class="button is-link" href="/login">
+                    <strong>Log In</strong>
+                  </a>
+                  <a class="button is-outlined is-link" href="/register">
+                      Sign Up
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </nav>
+        <!-- Hero -->
+        <section class="hero is-link">
+            <div class="hero-body" align="center">
+                <h1 class="title">
+                    {{ title }}
+                </h1>
+                <h2 class="subtitle">
+                    {{ subtitle }}
+                </h2>
+            </div>
+        </section>
+        <section class="section">
+            <div class="container">
+                {% block content %}{% endblock %}
+            </div>
+        </section>
+    </body>
+</html>

@@ -1,0 +1,28 @@
+{% extends "website/base.html" %}
+{% block content %}
+    <h1 class="title">Upcoming Flights</h1>
+    {% if flights %}
+        <table class="table is-fullwidth">
+            <thead>
+                <tr>
+                    <th>Airline</th>
+                    <th>Flight Number</th>
+                    <th>Origin</th>
+                    <th>Destination</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for flight in flights %}
+                    <tr>
+                        <td>{{ flight.airline }}</td>
+                        <td>{{ flight.flight_no }}</td>
+                        <td>{{ flight.origin }}</td>
+                        <td>{{ flight.destination }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No flights found.</p>
+    {% endif %}
+{% endblock %}
