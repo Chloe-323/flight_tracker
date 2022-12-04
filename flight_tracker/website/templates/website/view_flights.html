@@ -28,9 +28,10 @@
                         <td>{{ flight.price }}</td>
                         <td>{{ flight.status }}</td>
                         <td>
-                            <form action="/cancel_trip" method="GET">
-                                <input type="hidden" name="ticket_id" value="{{ flight.ticket_id }}">
-                                <button class="button is-danger is-small" type="submit">Cancel</button>
+                            <form action="/update_flight" method="GET">
+                                <input type="hidden" name="flight_no" value="{{ flight.flight_no }}">
+                                <input type="hidden" name="airline" value="{{ flight.airline }}">
+                                <button class="button is-link is-small" type="submit">Update</button>
                             </form>
                         </td>
                     </tr>

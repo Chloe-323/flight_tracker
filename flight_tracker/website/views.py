@@ -509,6 +509,20 @@ def view_flights(request):
         return redirect('login')
     if context['type'] != 'airline_staff':
         return redirect('login')
+
+    # Find all flights operated by the airline
+    airline = AirlineStaff.objects.get(username=request.session['username']).airline
+    for flight in Flight.objects.filter(airline=airline):
+        context['flights'].append({
+            'airline': flight.airline.name,
+            'flight_no': flight.flight_number,
+            'origin': flight.departure_airport.name,
+            'destination': flight.arrival_airport.name,
+            'departure': flight.departure_date,
+            'arrival': flight.arrival_date,
+            'price': flight.base_price,
+            'status': flight.status,
+        })
     return render(request, 'website/view_flights.html', context)
 
 def create_flight(request):    
