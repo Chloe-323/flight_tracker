@@ -526,10 +526,40 @@ def view_flights(request):
     return render(request, 'website/view_flights.html', context)
 
 def create_flight(request):    
-    return render(request, 'website/create_flight.html')
+    context = {}
+    context['title'] = 'Create Flight'
+    context['flights'] = []
+    if request.session.get('username') is not None:
+        context['username'] = request.session['username']
+        if request.session['type'] == 'customer':
+            context['type'] = 'customer'
+        elif request.session['type'] == 'airline_staff':
+            context['type'] = 'airline_staff'
+        else:
+            context['type'] = 'error'
+    else:
+        return redirect('login')
+    if context['type'] != 'airline_staff':
+        return redirect('login')
+    return render(request, 'website/create_flight.html', context)
 
 def update_flight(request):    
-    return render(request, 'website/update_flight.html')
+    context = {}
+    context['title'] = 'Create Flight'
+    context['flights'] = []
+    if request.session.get('username') is not None:
+        context['username'] = request.session['username']
+        if request.session['type'] == 'customer':
+            context['type'] = 'customer'
+        elif request.session['type'] == 'airline_staff':
+            context['type'] = 'airline_staff'
+        else:
+            context['type'] = 'error'
+    else:
+        return redirect('login')
+    if context['type'] != 'airline_staff':
+        return redirect('login')
+    return render(request, 'website/update_flight.html', context)
 
 def add_airplane(request):    
     return render(request, 'website/add_airplane.html')
