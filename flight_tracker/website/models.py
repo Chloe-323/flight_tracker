@@ -49,11 +49,13 @@ class Flight(models.Model):
 
     departure_date = models.DateTimeField()
     arrival_date = models.DateTimeField()
+    status = models.CharField(max_length=30)
     class Meta:
         unique_together = (('airline', 'flight_number'),)
 
 class Ticket(models.Model):
-    ticket_id = models.CharField(max_length=30, primary_key=True)
+    #auto incrementing id
+    ticket_id = models.AutoField(primary_key=True)
     sold_price = models.DecimalField(max_digits=10, decimal_places=2)
     card_type = models.CharField(max_length=30)
     card_number = models.CharField(max_length=16)

@@ -51,19 +51,25 @@ def index(request):
     context['title'] = 'Home'
     context['subtitle'] = 'Welcome to the home page'
     context['flights'] = [
-        {
-            'airline': 'Delta',
-            'flight_no': 'DL123',
-            'origin': 'SFO',
-            'destination': 'LAX',
-        }
         ]
+    if request.session.get('username') is not None:
+        context['username'] = request.session['username']
+        if request.session['type'] == 'customer':
+            context['type'] = 'customer'
+        elif request.session['type'] == 'airline_staff':
+            context['type'] = 'airline_staff'
+        else:
+            context['type'] = 'error'
     for flight in Flight.objects.all():
         context['flights'].append({
             'airline': flight.airline.name,
             'flight_no': flight.flight_number,
             'origin': flight.departure_airport.name,
             'destination': flight.arrival_airport.name,
+            'departure': flight.departure_date.date(),
+            'arrival': flight.arrival_date.date(),
+            'price': flight.base_price,
+            'status': flight.status,
         })
     return render(request, 'website/index.html', context)
 
@@ -79,9 +85,9 @@ def login(request):
 #Try customer by email 
     customer = Customer.objects.filter(email=username)
     if customer.exists():
-        salt = customer.first().salt
+        salt = customer.first().password_salt
         hashed_password = hashlib.sha256((password + salt).encode('utf-8')).hexdigest()
-        if hashed_password == customer.first().password:
+        if hashed_password == customer.first().password_hash:
             request.session['username'] = username
             request.session['type'] = 'customer'
             return redirect('my_flights')
@@ -91,9 +97,9 @@ def login(request):
 #Try airline staff by username
     airline_staff = AirlineStaff.objects.filter(username=username)
     if airline_staff.exists():
-        salt = airline_staff.first().salt
+        salt = airline_staff.first().password_salt
         hashed_password = hashlib.sha256((password + salt).encode('utf-8')).hexdigest()
-        if hashed_password == airline_staff.first().password:
+        if hashed_password == airline_staff.first().password_hash:
             request.session['username'] = username
             request.session['type'] = 'airline_staff'
             return redirect('view_flights')
@@ -149,10 +155,20 @@ def logout(request):
     request.session.flush()
     return redirect('login')
 
+#TODO: make this raw SQL queries because FINAL PROJECT NEEDS SQL 
 def search(request):    
     context = {}
     context['title'] = 'Search'
     context['flights'] = []
+    if request.session.get('username') is not None:
+        context['username'] = request.session['username']
+        if request.session['type'] == 'customer':
+            context['type'] = 'customer'
+        elif request.session['type'] == 'airline_staff':
+            context['type'] = 'airline_staff'
+        else:
+            context['type'] = 'error'
+
 
     results = None
 
@@ -177,6 +193,9 @@ def search(request):
                 'flight_no': result.flight_number,
                 'origin': result.departure_airport.name,
                 'destination': result.arrival_airport.name,
+                'departure': result.departure_date.date(),
+                'arrival': result.arrival_date.date(),
+                'status': result.status,
             })
     else:
         if 'src' in request.GET and request.GET['src'] != '': # Source airport
@@ -202,11 +221,11 @@ def search(request):
         if 'date' in request.GET and request.GET['date'] != '': # Date
             if not results:
                 results = Flight.objects.filter(
-                        departure_time__date=request.GET['date']
+                        departure_date__date=request.GET['date']
                         )
             else:
                 results = results.filter(
-                        departure_time__date=request.GET['date']
+                        departure_date__date=request.GET['date']
                         )
         if 'airline' in request.GET and request.GET['airline'] != '': # Airline
             if not results:
@@ -233,18 +252,198 @@ def search(request):
                     'flight_no': result.flight_number,
                     'origin': result.departure_airport.name,
                     'destination': result.arrival_airport.name,
+                    'departure': result.departure_date.date(),
+                    'arrival': result.arrival_date.date(),
+                    'status': result.status,
                 })
     return render(request, 'website/search.html', context)
 
 #Customer Use Cases
 
 def my_flights(request):    
-    return render(request, 'website/my_flights.html')
+    context = {}
+    context['title'] = 'Search'
+    context['flights'] = []
+    if request.session.get('username') is not None:
+        context['username'] = request.session['username']
+        if request.session['type'] == 'customer':
+            context['type'] = 'customer'
+        elif request.session['type'] == 'airline_staff':
+            context['type'] = 'airline_staff'
+        else:
+            context['type'] = 'error'
+    else:
+        return redirect('login')
+    if context['type'] != 'customer':
+        return redirect('login')
+
+    #Get all flights for which the customer has a ticket
+    results = Ticket.objects.filter(
+            customer__email=request.session['username']
+            )
+    for result in results:
+        context['flights'].append({
+            'airline': result.flight.airline.name,
+            'flight_no': result.flight.flight_number,
+            'origin': result.flight.departure_airport.name,
+            'destination': result.flight.arrival_airport.name,
+            'departure': result.flight.departure_date,
+            'arrival': result.flight.arrival_date,
+            'price': result.sold_price,
+            'status': result.flight.status,
+            'ticket_id': result.ticket_id,
+        })
+    return render(request, 'website/my_flights.html', context)
 
 def purchase_tickets(request):    
-    return render(request, 'website/purchase_tickets.html')
+    context = {}
+    context['title'] = 'Purchase Tickets'
+    context['flights'] = []
+    if request.session.get('username') is not None:
+        context['username'] = request.session['username']
+        if request.session['type'] == 'customer':
+            context['type'] = 'customer'
+        elif request.session['type'] == 'airline_staff':
+            context['type'] = 'airline_staff'
+        else:
+            context['type'] = 'error'
+    else:
+        return redirect('login')
+    if context['type'] != 'customer':
+        return redirect('login')
+
+    #Find fname and lname of customer
+    customer = Customer.objects.get(email=request.session['username'])
+    context['fname'] = customer.fname
+    context['lname'] = customer.lname
+
+    if request.method == 'GET':
+        if 'flight_no' in request.GET and request.GET['flight_no'] != '':
+            try:
+                flight = Flight.objects.get(
+                        flight_number=request.GET['flight_no']
+                        )
+#                print(flight, flush=True)
+            except:
+                return redirect('search')
+            context['flight'] = {
+                'airline': flight.airline.name,
+                'flight_no': flight.flight_number,
+                'origin': flight.departure_airport.name,
+                'destination': flight.arrival_airport.name,
+                'departure': flight.departure_date.date(),
+                'arrival': flight.arrival_date.date(),
+                'price': flight.base_price,
+                'status': flight.status,
+            }
+            return render(request, 'website/purchase_tickets.html', context)
+        else:
+            return redirect('search')
+    elif request.method == 'POST':
+        if 'flight_no' in request.POST and request.POST['flight_no'] != '':
+            try:
+                flight = Flight.objects.get(
+                        flight_number=request.POST['flight_no']
+                        )
+            except:
+                return redirect('search')
+            #Validate CC info
+            if 'cc_no' not in request.POST or request.POST['cc_no'] == '':
+                print('No CC number', flush=True)
+                return redirect('search')
+            if 'exp_date' not in request.POST or request.POST['exp_date'] == '':
+                print('No CC exp date', flush=True)
+                return redirect('search')
+            if 'cvv' not in request.POST or request.POST['cvv'] == '':
+                print('No CC cvv', flush=True)
+                return redirect('search')
+
+            #Create ticket
+            ticket = Ticket(
+                    flight=flight,
+                    customer=customer,
+                    sold_price=flight.base_price,
+                    card_type='Unknown',
+                    card_number=request.POST['cc_no'],
+                    expiration_date=request.POST['exp_date'],
+                    security_code=request.POST['cvv'],
+                    purchase_time=datetime.datetime.now(),
+                    purchase_date=datetime.datetime.today(),
+                    )
+            ticket.save()
+            return redirect('my_flights')
+        else:
+            return redirect('search')
+    return redirect('index')
 
 def cancel_trip(request):    
+    context = {}
+    context['title'] = 'Cancel Trip'
+    context['flights'] = []
+    if request.session.get('username') is not None:
+        context['username'] = request.session['username']
+        if request.session['type'] == 'customer':
+            context['type'] = 'customer'
+        elif request.session['type'] == 'airline_staff':
+            context['type'] = 'airline_staff'
+        else:
+            context['type'] = 'error'
+    else:
+        return redirect('login')
+    if context['type'] != 'customer':
+        return redirect('login')
+
+    if request.method == 'GET':
+        print(request, flush=True)
+        if 'ticket_id' in request.GET and request.GET['ticket_id'] != '':
+            try:
+                ticket = Ticket.objects.get(
+                        ticket_id=request.GET['ticket_id']
+                        )
+            except:
+                return redirect('my_flights')
+            context['flight'] = {
+                'airline': ticket.flight.airline.name,
+                'flight_no': ticket.flight.flight_number,
+                'origin': ticket.flight.departure_airport.name,
+                'destination': ticket.flight.arrival_airport.name,
+                'departure': ticket.flight.departure_date.date(),
+                'arrival': ticket.flight.arrival_date.date(),
+                'price': ticket.sold_price,
+                'status': ticket.flight.status,
+                'ticket_id': ticket.ticket_id,
+            }
+            return render(request, 'website/cancel_trip.html', context)
+        else:
+            return redirect('my_flights')
+    elif request.method == 'POST':
+        if 'ticket_id' in request.POST and request.POST['ticket_id'] != '':
+            try:
+                ticket = Ticket.objects.get(
+                        ticket_id=request.POST['ticket_id']
+                        )
+            except:
+                return redirect('my_flights')
+            if ticket.customer.email != request.session['username']:
+                return redirect('my_flights')
+            if 'confirm' not in request.POST:
+                context['flight'] = {
+                    'airline': ticket.flight.airline.name,
+                    'flight_no': ticket.flight.flight_number,
+                    'origin': ticket.flight.departure_airport.name,
+                    'destination': ticket.flight.arrival_airport.name,
+                    'departure': ticket.flight.departure_date.date(),
+                    'arrival': ticket.flight.arrival_date.date(),
+                    'price': ticket.sold_price,
+                    'status': ticket.flight.status,
+                    'ticket_id': ticket.ticket_id,
+                }
+                return render(request, 'website/cancel_trip.html', context)
+            ticket.delete()
+            return redirect('my_flights')
+        else:
+            return redirect('my_flights')
+
     return render(request, 'website/cancel_trip.html')
 
 def rate(request):    
@@ -256,10 +455,61 @@ def track_spending(request):
 # Airline Staff Use Cases
 
 def register_staff(request):    
+    if request.method == 'GET':    
+        context = {}
+        context['title'] = 'Register Staff'
+        context['airlines'] = []
+        for airline in Airline.objects.all():
+            print(airline.name, flush=True)
+            context['airlines'].append(airline.name)
+        return render(request, 'website/register_staff.html', context)
+    elif request.method != 'POST':
+        return HttpResponse('Invalid request method')
+    
+    # Input validation (light)
+    if request.POST['password'] != request.POST['confirm_password']:
+        return render(request, 'website/register_staff.html', {'error_message': 'Passwords do not match'})
+    if AirlineStaff.objects.filter(username=request.POST['username']).exists():
+        return render(request, 'website/register_staff.html', {'error_message': 'Email already exists'})
+
+    # Make sure all fields are filled in
+    for field in request.POST:
+        if request.POST[field] == '':
+            return render(request, 'website/register_staff.html', {'error_message': 'All fields are required'})
+
+    # Create customer
+    salt = "".join([chr(random.randint(0, 255)) for i in range(32)])
+    hashed_password = hashlib.sha256((request.POST['password'] + salt).encode('utf-8')).hexdigest()
+    airlinestaff = AirlineStaff(
+            username=request.POST['username'],
+            password_hash=hashed_password,
+            password_salt=salt,
+            date_of_birth=request.POST['dob'],
+            phone_number=request.POST['phone'],
+            email=request.POST['email'],
+            airline=Airline.objects.get(name=request.POST['airline']),
+        )
+    airlinestaff.save()
+    return redirect('login')
     return render(request, 'website/register_staff.html')
 
 def view_flights(request):    
-    return render(request, 'website/view_flights.html')
+    context = {}
+    context['title'] = 'View Airline Flights'
+    context['flights'] = []
+    if request.session.get('username') is not None:
+        context['username'] = request.session['username']
+        if request.session['type'] == 'customer':
+            context['type'] = 'customer'
+        elif request.session['type'] == 'airline_staff':
+            context['type'] = 'airline_staff'
+        else:
+            context['type'] = 'error'
+    else:
+        return redirect('login')
+    if context['type'] != 'airline_staff':
+        return redirect('login')
+    return render(request, 'website/view_flights.html', context)
 
 def create_flight(request):    
     return render(request, 'website/create_flight.html')

@@ -1,0 +1,54 @@
+{% extends "website/base.html" %}
+{% block content %}
+        <div class="container">
+            <div class="columns is-centered">
+                <div class="column is-half">
+                    </article>
+                    <div class="card">
+                        <div class="card-header">
+                            <p class="card-header-title">
+                                Flight Details
+                            </p>
+                        </div>
+                        <div class="card-content">
+                            <div class="columns">
+                                <div class="column">
+                                    <ul>
+                                        <li>Airline: {{ flight.airline }}</li>
+                                        <li>Flight Number: {{ flight.flight_no }}</li>
+                                        <li>Origin: {{ flight.origin }}</li>
+                                        <li>Destination: {{ flight.destination }}</li>
+                                        <li>Departure: {{ flight.departure }}</li>
+                                        <li>Arrival: {{ flight.arrival }}</li>
+                                        <li>Price: {{ flight.price }}</li>
+                                        <li>Status: {{ flight.status }}</li>
+                                    </ul>
+                                </div>
+                                <div class="column">
+                                    <a class="button is-link is-large" href="/my_flights">Back to My Flights</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="box">
+                        <h1 class="title" align="center">Please Confirm</h1>
+                    <form action="/cancel_trip" method="POST">
+                        <div class="field">
+                            <label class="checkbox">
+                                <input type="checkbox" name="confirm">
+                                I confirm that I want to cancel this trip. I understand that, if I cancel, I will not be able to get a refund, and may not be able to get another ticket at the same price.
+                            </label>
+                        </div>
+                        <div class="field">
+                            <div class="control">
+                                {% csrf_token %}
+                                <input type="hidden" name="ticket_id" value="{{ flight.ticket_id }}">
+                                <button class="button is-danger is-fullwidth">Cancel Trip</button>
+                            </div>
+                        </div>
+                    </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+{% endblock %}

@@ -1,0 +1,102 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <title>Login</title>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    </head>
+    <body>
+        <!-- Hero -->
+        <section class="hero is-link">
+            <div class="hero-body" align="center">
+                <h1 class="title">
+                    Register
+                </h1>
+                <h2 class="subtitle">
+                    Register a new account
+                </h2>
+            </div>
+        </section>
+        <section class="section">
+            <div class="container">
+                <div class="columns is-centered">
+                    <div class="column is-half">
+                        {% if error_message %}
+                            <div class="notification is-danger is-light">
+                                {{ error_message }}
+                            </div>
+                        {% endif %}
+                        <div class="box">
+                            <form action="/register_staff" method="POST">
+                                <div class="field">
+                                    <label class="label">Username</label>
+                                    <div class="control">
+                                        <input class="input" type="text" name="username" placeholder="Username">
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <label class="label">Email</label>
+                                    <div class="control">
+                                        <input class="input" type="email" name="email" placeholder="Email">
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <label class="label">Date of Birth</label>
+                                    <div class="control">
+                                        <input class="input" type="date" name="dob" placeholder="Date of Birth">
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <label class="label">Password</label>
+                                    <div class="control">
+                                        <input class="input" type="password" name="password" placeholder="Password">
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <label class="label">Confirm Password</label>
+                                    <div class="control">
+                                        <input class="input" type="password" name="confirm_password" placeholder="Confirm Password">
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <label class="label">Employing Airline</label>
+                                    <div class="select">
+                                        <select name="airline">
+                                            <option>Select Airline</option>
+                                            {% for airline in airlines %}
+                                                <option>{{ airline }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <label class="label">Phone Number</label>
+                                    <div class="control">
+                                        <input class="input" type="number" name="phone" placeholder="5055555555">
+                                    </div>
+                                    <p class="help">Please enter your phone number without dashes or parentheses.</p>
+                                </div>
+                                <hr>
+                                <div class="columns pt-5">
+                                    <div class="column">
+                                        <div class="control">
+                                            {% csrf_token %}
+                                            <button class="button is-link is-fullwidth">Register</button>
+                                        </div>
+                                    </div>
+                                    <div class="column pt-5">
+                                        <div class="control">
+                                            Already have an account? <a href="/login">Log In</a>
+                                        </div>
+                                        <div class="control">
+                                            Registering as a customer? <a href="/register">Register as Customer</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </body>
+</html>

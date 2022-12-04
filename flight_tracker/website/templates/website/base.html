@@ -8,9 +8,15 @@
         <!-- Navbar -->
         <nav class="navbar is-fixed-top" role="navigation" aria-label="main navigation">
           <div class="navbar-brand">
+              {% if type == "airline_staff" %}
+            <a class="navbar-item" href="/view_flights">
+              <img src="static/images/logo.png" width="112" height="28">
+            </a>
+            {% else %}
             <a class="navbar-item" href="/">
               <img src="static/images/logo.png" width="112" height="28">
             </a>
+            {% endif %}
 
             <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbarBasicExample">
               <span aria-hidden="true"></span>
@@ -24,10 +30,40 @@
               <a class="navbar-item" href="search">
                   Advanced Search
               </a>
-
-              <a class="navbar-item">
-                  Help
+              {% if type == "customer" %}
+              <a class="navbar-item" href="/my_flights">
+                  My Flights
               </a>
+              <a class="navbar-item">
+                  My Ratings
+              </a>
+              <a class="navbar-item">
+                  Track my Spending
+              </a>
+              {% elif type == "airline_staff" %}
+              <a class="navbar-item" href="/create_flight">
+                  Create Flight
+              </a>
+              <a class="navbar-item" href="/add_airplane">
+                  Register New Airplane
+              </a>
+              <a class="navbar-item" href="/add_airport">
+                  Register New Airport
+              </a>
+              <a class="navbar-item" href="/view_ratings">
+                  Ratings
+              </a>
+              <a class="navbar-item" href="/view_frequent_customers">
+                  Frequent Customers
+              </a>
+              <a class="navbar-item" href="/view_reports">
+                  Reports
+              </a>
+              <a class="navbar-item" href="/view_earned_revenue">
+                  Earned Revenue
+              </a>
+
+              {% endif %}
 
               <div class="navbar-item has-dropdown is-hoverable">
                 <a class="navbar-link">
@@ -60,11 +96,25 @@
                               <button class="button is-link">Search</button>
                           </div>
                       </div>
+                  </form>
               </div>
             </div>
 
             <div class="navbar-end">
               <div class="navbar-item">
+                {% if username %}
+                <div class="field has-addons">
+                    <div class="control">
+                        <a class="button is-link is-outlined is-static" >
+                            {{ username }}
+                        </a>
+                    </div>
+                    <div class="control">
+                        <a class="button is-link" href="/logout">
+                            Logout
+                        </a>
+                    </div>
+                {% else %}
                 <div class="buttons">
                   <a class="button is-link" href="/login">
                     <strong>Log In</strong>
@@ -73,6 +123,7 @@
                       Sign Up
                   </a>
                 </div>
+                {% endif %}
               </div>
             </div>
           </div>

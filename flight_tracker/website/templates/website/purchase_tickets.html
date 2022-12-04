@@ -1,0 +1,87 @@
+{% extends "website/base.html" %}
+{% block content %}
+            <div class="container">
+                <div class="columns is-centered">
+                    <div class="column is-half">
+                        <article class="message is-danger">
+                            <div class="message-header">
+                                <p>Important!</p>
+                            </div>
+                            <div class="message-body">
+                                <p>This is a school project. You will not actually be able to purchase tickets, and the database is not as secured as it should be.</p>
+                                <p><strong>Do not use real information!</strong></p>
+                            </div>
+                        </article>
+                        <div class="card">
+                            <div class="card-header">
+                                <p class="card-header-title">
+                                    Flight Details
+                                </p>
+                            </div>
+                            <div class="card-content">
+                                <div class="columns">
+                                    <div class="column">
+                                        <ul>
+                                            <li>Airline: {{ flight.airline }}</li>
+                                            <li>Flight Number: {{ flight.flight_no }}</li>
+                                            <li>Origin: {{ flight.origin }}</li>
+                                            <li>Destination: {{ flight.destination }}</li>
+                                            <li>Departure: {{ flight.departure }}</li>
+                                            <li>Arrival: {{ flight.arrival }}</li>
+                                            <li>Price: {{ flight.price }}</li>
+                                            <li>Status: {{ flight.status }}</li>
+                                        </ul>
+                                    </div>
+                                    <div class="column">
+                                        <h1 class="title is-1">${{ flight.price }}</h1>
+                                        <a class="button is-link is-large" href="/search">Back to Search</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="box">
+                            <h1 class="title" align="center">Please Enter your Payment Info</h1>
+                        <form action="/purchase_tickets" method="POST">
+                            <input type="hidden" name="flight_no" value="{{ flight.flight_no }}">
+                            <input type="hidden" name="airline" value="{{ flight.airline }}">
+                            <div class="field">
+                                <label class="label">Card Number</label>
+                                <input class="input" type="number" name="cc_no" placeholder="Credit Card Number">
+                            </div>
+                            <div class="columns">
+                                <div class="column">
+                                    <div class="field">
+                                        <label class="label">Expiration Date</label>
+                                        <input class="input" type="date" name="exp_date" >
+                                    </div>
+                                </div>
+                                <div class="column">
+                                    <div class="field">
+                                        <label class="label">Security Code</label>
+                                        <input class="input" type="number" name="cvv" placeholder="CVV">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="field">
+                                <label class="label">Name on Card</label>
+                                <div class="columns">
+                                    <div class="column">
+                                        <input class="input" type="text" name="name" value="{{ fname }}" readonly>
+                                    </div>
+                                    <div class="column">
+                                        <input class="input" type="text" name="name" value="{{ lname }}" readonly>
+                                    </div>
+                            </div>
+                            <div class="field">
+                                <div class="control">
+                                    {% csrf_token %}
+                                    <button class="button is-link is-fullwidth">Make Purchase</button>
+                                </div>
+                            </div>
+                        </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+{% endblock %}
