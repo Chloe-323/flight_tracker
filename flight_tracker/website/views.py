@@ -262,7 +262,7 @@ def search(request):
 
 def my_flights(request):    
     context = {}
-    context['title'] = 'Search'
+    context['title'] = 'My Flights'
     context['flights'] = []
     if request.session.get('username') is not None:
         context['username'] = request.session['username']
@@ -520,7 +520,7 @@ def view_flights(request):
             'destination': flight.arrival_airport.name,
             'departure': flight.departure_date,
             'arrival': flight.arrival_date,
-            'price': flight.base_price,
+            'ticket_sales': Ticket.objects.filter(flight=flight).count(),
             'status': flight.status,
         })
     return render(request, 'website/view_flights.html', context)
@@ -541,11 +541,44 @@ def create_flight(request):
         return redirect('login')
     if context['type'] != 'airline_staff':
         return redirect('login')
+
+    if request.method == 'GET':
+        context['airports'] = []
+        context['airplanes'] = []
+        for airport in Airport.objects.all():
+            context['airports'].append(airport.name)
+        for airplane in Airplane.objects.filter(airline=AirlineStaff.objects.get(username=request.session['username']).airline):
+            print(airplane.airplane_id, flush=True)
+            context['airplanes'].append(airplane.airplane_id)
+            print(context['airplanes'], flush=True)
+        context['flight_no'] = f'{Flight.objects.count() + 1:04d}'
+        return render(request, 'website/create_flight.html', context)
+    elif request.method != 'POST':
+        return HttpResponse('Invalid request method')
+
+    # Make sure all fields are filled in
+    print(request.POST, flush=True)
+    for field in request.POST:
+        if request.POST[field] == '':
+            return redirect('create_flight')
+    flight = Flight(
+        airline=AirlineStaff.objects.get(username=request.session['username']).airline,
+        flight_number=f'{Flight.objects.count() + 1:04d}',
+        departure_airport=Airport.objects.get(name=request.POST['departure_airport']),
+        arrival_airport=Airport.objects.get(name=request.POST['arrival_airport']),
+        departure_date=datetime.datetime.strptime(request.POST['departure_date'] + ' ' + request.POST['departure_time'], '%Y-%m-%d %H:%M'),
+        arrival_date=datetime.datetime.strptime(request.POST['arrival_date'] + ' ' + request.POST['arrival_time'], '%Y-%m-%d %H:%M'),
+        base_price=request.POST['price'],
+        status=request.POST['status'],
+        airplane=Airplane.objects.get(airplane_id=request.POST['airplane'], airline=AirlineStaff.objects.get(username=request.session['username']).airline),
+    )
+    flight.save()
+    return redirect('view_flights')
     return render(request, 'website/create_flight.html', context)
 
 def update_flight(request):    
     context = {}
-    context['title'] = 'Create Flight'
+    context['title'] = 'Update Flight'
     context['flights'] = []
     if request.session.get('username') is not None:
         context['username'] = request.session['username']
@@ -559,7 +592,47 @@ def update_flight(request):
         return redirect('login')
     if context['type'] != 'airline_staff':
         return redirect('login')
-    return render(request, 'website/update_flight.html', context)
+    if request.method == 'GET':
+        if 'flight_no' not in request.GET:
+            return redirect('view_flights')
+        if 'airline' not in request.GET:
+            return redirect('view_flights')
+        context['airports'] = []
+        context['airplanes'] = []
+        for airport in Airport.objects.all():
+            context['airports'].append(airport.name)
+        for airplane in Airplane.objects.filter(airline=AirlineStaff.objects.get(username=request.session['username']).airline):
+            context['airplanes'].append(airplane.airplane_id)
+        context['flight_no'] = request.GET['flight_no']
+        flight = Flight.objects.get(flight_number=request.GET['flight_no'], airline=AirlineStaff.objects.get(username=request.session['username']).airline)
+        context['departure_airport'] = flight.departure_airport.name
+        context['arrival_airport'] = flight.arrival_airport.name
+        context['departure_date'] = flight.departure_date.strftime('%Y-%m-%d')
+        context['departure_time'] = flight.departure_date.strftime('%H:%M')
+        context['arrival_date'] = flight.arrival_date.strftime('%Y-%m-%d')
+        context['arrival_time'] = flight.arrival_date.strftime('%H:%M')
+        context['price'] = flight.base_price
+        context['status'] = flight.status
+        context['airplane_id'] = flight.airplane.airplane_id
+        return render(request, 'website/update_flight.html', context)
+    elif request.method != 'POST':
+        return HttpResponse('Invalid request method')
+
+    # Make sure all fields are filled in
+    for field in request.POST:
+        if request.POST[field] == '':
+            return redirect('update_flight')
+    flight = Flight.objects.get(flight_number=request.POST['flight_no'], airline=AirlineStaff.objects.get(username=request.session['username']).airline)
+    flight.flight_number = request.POST['flight_no']
+    flight.departure_airport=Airport.objects.get(name=request.POST['departure_airport'])
+    flight.arrival_airport=Airport.objects.get(name=request.POST['arrival_airport'])
+    flight.departure_date=datetime.datetime.strptime(request.POST['departure_date'] + ' ' + request.POST['departure_time'], '%Y-%m-%d %H:%M')
+    flight.arrival_date=datetime.datetime.strptime(request.POST['arrival_date'] + ' ' + request.POST['arrival_time'], '%Y-%m-%d %H:%M')
+    flight.base_price=request.POST['price']
+    flight.status=request.POST['status']
+    flight.airplane=Airplane.objects.get(airplane_id=request.POST['airplane'], airline=AirlineStaff.objects.get(username=request.session['username']).airline)
+    flight.save()
+    return redirect('view_flights')
 
 def add_airplane(request):    
     return render(request, 'website/add_airplane.html')

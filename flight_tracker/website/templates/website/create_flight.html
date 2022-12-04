@@ -15,17 +15,43 @@
                             <div class="columns">
                                 <div class="column">
                                     <div class="field">
-                                        <label class="label">Departure Date</label>
+                                        <label class="label">Departure</label>
+                                        <div class="control">
+                                            <div class="select is-fullwidth">
+                                                <select name="departure_airport">
+                                                    <option>Select Airport</option>
+                                                    {% for airport in airports %}
+                                                        <option>{{ airport }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                        </div>
                                         <input class="input" type="date" name="departure_date" >
                                         <input class="input" type="time" name="departure_time" >
                                     </div>
                                 </div>
                                 <div class="column">
                                     <div class="field">
-                                        <label class="label">Arrival Date</label>
+                                        <label class="label">Arrival</label>
+                                        <div class="control">
+                                            <div class="select is-fullwidth">
+                                                <select name="arrival_airport">
+                                                    <option>Select Airport</option>
+                                                    {% for airport in airports %}
+                                                        <option>{{ airport }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                        </div>
                                         <input class="input" type="date" name="arrival_date" >
                                         <input class="input" type="time" name="arrival_time" >
                                     </div>
+                                </div>
+                            </div>
+                            <div class="field">
+                                <label class="label">Price</label>
+                                <div class="control">
+                                    <input class="input" type="number" name="price" placeholder="Price">
                                 </div>
                             </div>
                             <div class="field">
@@ -37,7 +63,7 @@
                                                 <select name="airplane">
                                                     <option>Select Airplane</option>
                                                     {% for airplane in airplanes %}
-                                                        <option value="{{ airplane.id }}">{{ airplane.id }}</option>
+                                                        <option>{{ airplane }}</option>
                                                     {% endfor %}
                                                 </select>
                                             </div>

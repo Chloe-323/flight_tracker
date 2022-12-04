@@ -5,27 +5,63 @@
                     <div class="column is-half">
                         <div class="box">
                             <h1 class="title" align="center">Update Flight</h1>
-                        <form action="/create_flight" method="POST">
+                        <form action="/update_flight" method="POST">
                             <div class="field">
                                 <label class="label">Flight Number</label>
                                 <div class="control">
-                                    <input class="input" type="number" name="flight_number" value="{{ flight_no }}" readonly>
+                                    <input class="input" type="number" name="flight_no" value="{{ flight_no }}" readonly>
                                 </div>
                             </div>
                             <div class="columns">
                                 <div class="column">
                                     <div class="field">
-                                        <label class="label">Departure Date</label>
-                                        <input class="input" type="date" name="departure_date" value="{{ departure_date }}">
-                                        <input class="input" type="time" name="departure_time" value="{{ departure_time }}">
+                                        <label class="label">Departure</label>
+                                        <div class="control">
+                                            <div class="select is-fullwidth">
+                                                <select name="departure_airport">
+                                                    <option>Select Airport</option>
+                                                    {% for airport in airports %}
+                                                        <option
+                                                        {% if airport == departure_airport %}
+                                                            selected
+                                                        {% endif %}
+                                                        >{{ airport }}
+                                                        </option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <input class="input" type="date" name="departure_date" value="{{departure_date}}">
+                                        <input class="input" type="time" name="departure_time" value="{{departure_time}}">
                                     </div>
                                 </div>
                                 <div class="column">
                                     <div class="field">
-                                        <label class="label">Arrival Date</label>
-                                        <input class="input" type="date" name="arrival_date" value="{{ arrival_date }}">
-                                        <input class="input" type="time" name="arrival_time" value="{{ arrival_time }}">
+                                        <label class="label">Arrival</label>
+                                        <div class="control">
+                                            <div class="select is-fullwidth">
+                                                <select name="arrival_airport">
+                                                    <option>Select Airport</option>
+                                                    {% for airport in airports %}
+                                                        <option
+                                                        {% if airport == arrival_airport %}
+                                                            selected
+                                                        {% endif %}
+                                                        >{{ airport }}
+                                                        </option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <input class="input" type="date" name="arrival_date" value="{{arrival_date}}">
+                                        <input class="input" type="time" name="arrival_time" value="{{arrival_time}}">
                                     </div>
+                                </div>
+                            </div>
+                            <div class="field">
+                                <label class="label">Price</label>
+                                <div class="control">
+                                    <input class="input" type="number" name="price" placeholder="Price" value="{{price}}">
                                 </div>
                             </div>
                             <div class="field">
@@ -37,7 +73,12 @@
                                                 <select name="airplane">
                                                     <option>Select Airplane</option>
                                                     {% for airplane in airplanes %}
-                                                        <option value="{{ airplane.id }}">{{ airplane.id }}</option>
+                                                        <option
+                                                        {% if airplane == airplane_id %}
+                                                            selected
+                                                        {% endif %}
+                                                        >{{ airplane }}
+                                                        </option>
                                                     {% endfor %}
                                                 </select>
                                             </div>
@@ -60,10 +101,16 @@
                             <div class="field">
                                 <div class="control">
                                     {% csrf_token %}
-                                    <button class="button is-link is-fullwidth">Add Flight</button>
+                                    <button class="button is-link is-fullwidth">Update Flight</button>
                                 </div>
                             </div>
                         </form>
+                        <form>
+                            <div class="field">
+                                <div class="control">
+                                    <button class="button is-danger is-fullwidth" disabled>Delete Flight</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
