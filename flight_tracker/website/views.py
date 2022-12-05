@@ -11,42 +11,6 @@ from .models import *
 from django.contrib.auth.models import User 
 
 def index(request):    
-    try:
-        new_airline = Airline(name="Delta")
-        new_airline.save()
-        new_airplane = Airplane(
-            airplane_id="1234",
-            airline=new_airline,
-            manufacturer="Boeing",
-            seats=100,
-            date_built=datetime.date(2018, 1, 1)
-        )
-        new_airplane.save()
-        jfk = Airport(
-            name="JFK",
-            city="New York",
-            country="US",
-            airport_type="International"
-            )
-        jfk.save()
-        lax = Airport(
-            name="LAX",
-            city="Los Angeles",
-            country="US",
-            airport_type="International"
-            )
-        lax.save()
-        new_flight = Flight.objects.create(
-            airline=Airline.objects.get(name='Delta'),
-            flight_number='1234',
-            base_price=100.00,
-            airplane=Airplane.objects.get(airplane_id='1234', airline=Airline.objects.get(name='Delta')),
-            departure_airport=Airport.objects.get(name='JFK'),
-            arrival_airport=Airport.objects.get(name='LAX')
-        )
-        new_flight.save()
-    except:
-        pass
     context = {}
     context['title'] = 'Home'
     context['subtitle'] = 'Welcome to the home page'
@@ -551,7 +515,7 @@ def create_flight(request):
             print(airplane.airplane_id, flush=True)
             context['airplanes'].append(airplane.airplane_id)
             print(context['airplanes'], flush=True)
-        context['flight_no'] = f'{Flight.objects.count() + 1:04d}'
+        context['flight_no'] = f'FL{Flight.objects.count() + 1:04d}'
         return render(request, 'website/create_flight.html', context)
     elif request.method != 'POST':
         return HttpResponse('Invalid request method')
@@ -635,10 +599,75 @@ def update_flight(request):
     return redirect('view_flights')
 
 def add_airplane(request):    
-    return render(request, 'website/add_airplane.html')
+    context = {}
+    context['title'] = 'Add Airplane'
+    context['flights'] = []
+    if request.session.get('username') is not None:
+        context['username'] = request.session['username']
+        if request.session['type'] == 'customer':
+            context['type'] = 'customer'
+        elif request.session['type'] == 'airline_staff':
+            context['type'] = 'airline_staff'
+        else:
+            context['type'] = 'error'
+    else:
+        return redirect('login')
+    if context['type'] != 'airline_staff':
+        return redirect('login')
+
+    if request.method == 'GET':
+        context['airplane_id'] = f'PL{Airplane.objects.count() + 1:08d}'
+        return render(request, 'website/add_airplane.html', context)
+    elif request.method != 'POST':
+        return HttpResponse('Invalid request method')
+
+    # Make sure all fields are filled in
+    for field in request.POST:
+        if request.POST[field] == '':
+            return redirect('add_airplane')
+    
+    airplane = Airplane(
+        airplane_id=request.POST['airplane_id'],
+        airline=AirlineStaff.objects.get(username=request.session['username']).airline,
+        seats=request.POST['seats'],
+        manufacturer=request.POST['manufacturer'],
+        date_built=request.POST['date_built'],
+        )
+    airplane.save()
+    return redirect('create_flight')
+    return render(request, 'website/add_airplane.html', context)
 
 def add_airport(request):    
-    return render(request, 'website/add_airport.html')
+    context = {}
+    context['title'] = 'Add Airport'
+    context['flights'] = []
+    if request.session.get('username') is not None:
+        context['username'] = request.session['username']
+        if request.session['type'] == 'customer':
+            context['type'] = 'customer'
+        elif request.session['type'] == 'airline_staff':
+            context['type'] = 'airline_staff'
+        else:
+            context['type'] = 'error'
+    else:
+        return redirect('login')
+    if context['type'] != 'airline_staff':
+        return redirect('login')
+
+    if request.method == 'POST':
+        # Make sure all fields are filled in
+        for field in request.POST:
+            if request.POST[field] == '':
+                return redirect('add_airport')
+        airport = Airport(
+            name=request.POST['name'],
+            city=request.POST['city'],
+            country=request.POST['country'],
+            airport_type=request.POST['type'],
+            )
+        airport.save()
+        return redirect('create_flight')
+    return render(request, 'website/add_airport.html', context)
 
 def view_ratings(request):    
     return render(request, 'website/view_ratings.html')

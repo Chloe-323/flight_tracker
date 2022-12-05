@@ -1,0 +1,47 @@
+{% extends "website/base.html" %}
+{% block content %}
+            <div class="container">
+                <div class="columns is-centered">
+                    <div class="column is-half">
+                        <div class="box">
+                            <h1 class="title" align="center">Register New Airplane</h1>
+                        <form action="/add_airplane" method="POST">
+                            <div class="field">
+                                <label class="label">Airplane ID</label>
+                                <div class="control">
+                                    <input class="input" type="text" name="airplane_id" value="{{ airplane_id }}" readonly>
+                                </div>
+                            </div>
+                            <div class="columns">
+                                <div class="column">
+                                    <div class="field">
+                                        <label class="label">Seats</label>
+                                        <div class="control">
+                                            <input class="input" type="number" name="seats">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="column">
+                                    <div class="field">
+                                        <label class="label">Manufacture Date</label>
+                                        <input class="input" type="date" name="date_built">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="field">
+                                <label class="label">Manufacturer</label>
+                                <input class="input" type="text" name="manufacturer" placeholder="Manufacturer">
+                            </div>
+                            <div class="field">
+                                <div class="control">
+                                    {% csrf_token %}
+                                    <button class="button is-link is-fullwidth">Add Airplane</button>
+                                </div>
+                            </div>
+                        </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+{% endblock %}
