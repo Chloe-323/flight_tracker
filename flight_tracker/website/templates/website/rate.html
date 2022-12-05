@@ -1,0 +1,63 @@
+{% extends "website/base.html" %}
+{% block content %}
+            <div class="container">
+                <div class="columns is-centered">
+                    <div class="column is-half">
+                        <div class="card">
+                            <div class="card-header">
+                                <p class="card-header-title">
+                                    Flight Details
+                                </p>
+                            </div>
+                            <div class="card-content">
+                                <div class="columns">
+                                    <div class="column">
+                                        <ul>
+                                            <li>Airline: {{ flight.airline }}</li>
+                                            <li>Flight Number: {{ flight.flight_no }}</li>
+                                            <li>Origin: {{ flight.origin }}</li>
+                                            <li>Destination: {{ flight.destination }}</li>
+                                            <li>Departure: {{ flight.departure }}</li>
+                                            <li>Arrival: {{ flight.arrival }}</li>
+                                            <li>Price: {{ flight.price }}</li>
+                                            <li>Status: {{ flight.status }}</li>
+                                        </ul>
+                                    </div>
+                                    <div class="column">
+                                        <a class="button is-link is-large" href="/my_flights">Back to My Flights</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="box">
+                            <h1 class="title" align="center">Please Enter your Rating</h1>
+                        <form action="/rate" method="POST">
+                            <jsuites-rating value="1" tooltip="1, 2, 3, 4, 5"></jsuites-rating>
+                            <input type="hidden" name="rating" id="rating" value="5">
+                            <input type="hidden" name="rating_id" value="{{ rating_id }}">
+                            <script>
+                                var rating = document.getElementById('rating');
+                                document.querySelector('jsuites-rating').addEventListener('onchange', function(e) {
+                                    rating.value = this.value;
+                                });
+                            </script>
+                            <input type="hidden" name="ticket_id" value="{{ flight.ticket_id }}">
+                            <br>
+                            <div class="field">
+                                <div class="control">
+                                    <textarea class="textarea" name="comment" placeholder="Comment">{{rating.comment}}</textarea>
+                                </div>
+                            </div>
+                            <div class="field">
+                                <div class="control">
+                                    {% csrf_token %}
+                                    <button class="button is-link is-fullwidth">Submit Rating</button>
+                                </div>
+                            </div>
+                        </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+{% endblock %}

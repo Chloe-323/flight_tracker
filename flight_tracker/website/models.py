@@ -67,6 +67,13 @@ class Ticket(models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
     flight = models.ForeignKey(Flight, on_delete=models.CASCADE)
 
+class Rating(models.Model):
+    rating_id = models.AutoField(primary_key=True)
+    rating = models.IntegerField()
+    comment = models.CharField(max_length=1000)
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
+    flight = models.ForeignKey(Flight, on_delete=models.CASCADE)
+
 class AirlineStaff(models.Model):
     username = models.CharField(max_length=30, primary_key=True)
     password_hash = models.CharField(max_length=256)

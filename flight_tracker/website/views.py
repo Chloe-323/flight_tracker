@@ -6,9 +6,12 @@ from django.contrib.auth import authenticate, login, logout
 import hashlib    
 import random
 import datetime    
+import pytz
 from django.db import models    
 from .models import *    
 from django.contrib.auth.models import User 
+
+utc=pytz.UTC
 
 def index(request):    
     context = {}
@@ -256,6 +259,7 @@ def my_flights(request):
             'price': result.sold_price,
             'status': result.flight.status,
             'ticket_id': result.ticket_id,
+            'ratable': result.flight.arrival_date < utc.localize(datetime.datetime.now()),
         })
     return render(request, 'website/my_flights.html', context)
 
@@ -411,7 +415,120 @@ def cancel_trip(request):
     return render(request, 'website/cancel_trip.html')
 
 def rate(request):    
-    return render(request, 'website/rate.html')
+    context = {}
+    context['title'] = 'Rate Trip'
+    context['flights'] = []
+    if request.session.get('username') is not None:
+        context['username'] = request.session['username']
+        if request.session['type'] == 'customer':
+            context['type'] = 'customer'
+        elif request.session['type'] == 'airline_staff':
+            context['type'] = 'airline_staff'
+        else:
+            context['type'] = 'error'
+    else:
+        return redirect('login')
+    if context['type'] != 'customer':
+        return redirect('login')
+
+    if request.method == 'GET':
+        if 'ticket_id' in request.GET and request.GET['ticket_id'] != '':
+            try:
+                ticket = Ticket.objects.get(
+                        ticket_id=request.GET['ticket_id']
+                        )
+            except:
+                return redirect('my_flights')
+            context['flight'] = {
+                'airline': ticket.flight.airline.name,
+                'flight_no': ticket.flight.flight_number,
+                'origin': ticket.flight.departure_airport.name,
+                'destination': ticket.flight.arrival_airport.name,
+                'departure': ticket.flight.departure_date.date(),
+                'arrival': ticket.flight.arrival_date.date(),
+                'price': ticket.sold_price,
+                'status': ticket.flight.status,
+                'ticket_id': ticket.ticket_id,
+            }
+        elif 'rating_id' in request.GET and request.GET['rating_id'] != '':
+            try:
+                rating = Rating.objects.get(
+                        rating_id=request.GET['rating_id']
+                        )
+                flight = rating.flight
+            except:
+                return redirect('my_flights')
+            context['rating_id'] = rating.rating_id
+            context['rating'] = {
+                'score': rating.rating,
+                'comment': rating.comment,
+            }
+            context['flight'] = {
+                'airline': flight.airline.name,
+                'flight_no': flight.flight_number,
+                'origin': flight.departure_airport.name,
+                'destination': flight.arrival_airport.name,
+                'departure': flight.departure_date.date(),
+                'arrival': flight.arrival_date.date(),
+                'status': flight.status,
+            }
+            return render(request, 'website/rate.html', context)
+        else:
+            return redirect('my_flights')
+    print(request.POST, flush=True)
+    if request.method == 'POST':
+        if 'ticket_id' in request.POST and request.POST['ticket_id'] != '':
+            try:
+                ticket = Ticket.objects.get(
+                        ticket_id=request.POST['ticket_id']
+                        )
+            except:
+                return redirect('my_flights')
+            if ticket.customer.email != request.session['username']:
+                return redirect('my_flights')
+            #Create rating object
+            rating = Rating(
+                    flight=ticket.flight,
+                    rating=request.POST['rating'],
+                    comment=request.POST['comment'],
+                    customer=ticket.customer,
+                    )
+            rating.save()
+            return redirect('my_flights')
+        else:
+            return redirect('my_flights')
+
+    return render(request, 'website/rate.html', context)
+
+def my_ratings(request):
+    context = {}
+    context['title'] = 'Rate Trip'
+    context['flights'] = []
+    if request.session.get('username') is not None:
+        context['username'] = request.session['username']
+        if request.session['type'] == 'customer':
+            context['type'] = 'customer'
+        elif request.session['type'] == 'airline_staff':
+            context['type'] = 'airline_staff'
+        else:
+            context['type'] = 'error'
+    else:
+        return redirect('login')
+    if context['type'] != 'customer':
+        return redirect('login')
+
+    if request.method == 'GET':
+        customer = Customer.objects.get(email=request.session['username'])
+        ratings = Rating.objects.filter(customer=customer)
+        
+        context['ratings'] = []
+        for rating in ratings:
+            context['ratings'].append({
+                'rating': rating.rating,
+                'comment': rating.comment,
+                'id': rating.rating_id,
+                })
+        return render(request, 'website/my_ratings.html', context)
 
 def track_spending(request):    
     return render(request, 'website/track_spending.html')
@@ -485,6 +602,7 @@ def view_flights(request):
             'departure': flight.departure_date,
             'arrival': flight.arrival_date,
             'ticket_sales': Ticket.objects.filter(flight=flight).count(),
+            'rating': Rating.objects.filter(flight=flight).aggregate(models.Avg('rating'))['rating__avg'],
             'status': flight.status,
         })
     return render(request, 'website/view_flights.html', context)
@@ -670,7 +788,37 @@ def add_airport(request):
     return render(request, 'website/add_airport.html', context)
 
 def view_ratings(request):    
-    return render(request, 'website/view_ratings.html')
+    context = {}
+    context['title'] = 'Ratings'
+    context['flights'] = []
+    if request.session.get('username') is not None:
+        context['username'] = request.session['username']
+        if request.session['type'] == 'customer':
+            context['type'] = 'customer'
+        elif request.session['type'] == 'airline_staff':
+            context['type'] = 'airline_staff'
+        else:
+            context['type'] = 'error'
+    else:
+        return redirect('login')
+    if context['type'] != 'airline_staff':
+        return redirect('login')
+
+    if request.method == 'GET':
+        if 'flight_no' not in request.GET or request.GET['flight_no'] == '':
+            return redirect('view_flights')
+        flight = Flight.objects.get(flight_number=request.GET['flight_no'], airline=AirlineStaff.objects.get(username=request.session['username']).airline)
+        ratings = Rating.objects.filter(flight=flight)
+        
+        context['ratings'] = []
+        context['flight_no'] = flight.flight_number
+        for rating in ratings:
+            context['ratings'].append({
+                'rating': rating.rating,
+                'comment': rating.comment,
+                })
+        return render(request, 'website/view_ratings.html', context)
+    return render(request, 'website/view_ratings.html', context)
 
 def view_frequent_customers(request):    
     return render(request, 'website/view_customers.html')

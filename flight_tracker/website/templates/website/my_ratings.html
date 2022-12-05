@@ -1,0 +1,28 @@
+{% extends "website/base.html" %}
+{% block content %}
+    <h1 class="title">My Ratings</h1>
+    {% if ratings %}
+        <table class="table is-fullwidth">
+            <thead>
+                <tr>
+                    <th>Score</th>
+                    <th>Comment</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for rating in ratings %}
+                    <tr>
+                        <td>{{ rating.rating }}</td>
+                        <td>{{ rating.comment }}</td>
+                        <td>
+                            <a class="button is-link" href="/rate?rating_id={{rating.id}}">Edit</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No flights found.</p>
+    {% endif %}
+{% endblock %}

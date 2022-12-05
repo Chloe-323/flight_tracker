@@ -13,6 +13,7 @@ urlpatterns = [
     path('purchase_tickets', views.purchase_tickets, name='purchase_tickets'),
     path('cancel_trip', views.cancel_trip, name='cancel_trip'),
     path('rate', views.rate, name='rate'),
+    path('my_ratings', views.my_ratings, name='my_ratings'),
     path('track_spending', views.track_spending, name='track_spending'),
     
     # Airline Staff Use Cases

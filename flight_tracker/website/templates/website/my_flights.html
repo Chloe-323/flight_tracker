@@ -14,6 +14,7 @@
                     <th>Price</th>
                     <th>Status</th>
                     <th></th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
@@ -25,13 +26,21 @@
                         <td>{{ flight.destination }}</td>
                         <td>{{ flight.departure }}</td>
                         <td>{{ flight.arrival }}</td>
-                        <td>{{ flight.price }}</td>
+                        <td>${{ flight.price }}</td>
                         <td>{{ flight.status }}</td>
                         <td>
                             <form action="/cancel_trip" method="GET">
                                 <input type="hidden" name="ticket_id" value="{{ flight.ticket_id }}">
                                 <button class="button is-danger is-small" type="submit">Cancel</button>
                             </form>
+                        </td>
+                        <td>
+                            {% if flight.ratable %}
+                            <form action="/rate" method="GET">
+                                <input type="hidden" name="ticket_id" value="{{ flight.ticket_id }}">
+                                <button class="button is-link is-small" type="submit">Rate</button>
+                            </form>
+                            {% endif %}
                         </td>
                     </tr>
                 {% endfor %}

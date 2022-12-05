@@ -13,6 +13,8 @@
                     <th>Arrival</th>
                     <th>Tickets Sold</th>
                     <th>Status</th>
+                    <th>Rating</th>
+                    <th></th>
                     <th></th>
                 </tr>
             </thead>
@@ -27,6 +29,7 @@
                         <td>{{ flight.arrival }}</td>
                         <td>{{ flight.ticket_sales }}</td>
                         <td>{{ flight.status }}</td>
+                        <td>{{ flight.rating }}</td>
                         <td>
                             <form action="/update_flight" method="GET">
                                 <input type="hidden" name="flight_no" value="{{ flight.flight_no }}">
@@ -34,6 +37,12 @@
                                 <button class="button is-link is-small" type="submit">Update</button>
                             </form>
                         </td>
+                        <td>
+                            <form action="/view_ratings" method="GET">
+                                <input type="hidden" name="flight_no" value="{{ flight.flight_no }}">
+                                <input type="hidden" name="airline" value="{{ flight.airline }}">
+                                <button class="button is-link is-small" type="submit">View Ratings</button>
+                            </form>
                     </tr>
                 {% endfor %}
             </tbody>
