@@ -1,0 +1,23 @@
+{% extends "website/base.html" %}
+{% block content %}
+    <h1 class="title">Reports</h1>
+
+    <div class="box">
+        <canvas id="myChart"></canvas>
+    </div>
+    <script>
+        const ctx = document.getElementById('myChart');
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: [{% for month in months %}'{{month}}',{% endfor %}],
+                datasets: [{
+                    label: 'Number of Flights',
+                    data: [{% for count in counts %}{{count}},{% endfor %}],
+                    borderWidth: 1
+                }]
+            },
+        });
+    </script>
+{% endblock %}

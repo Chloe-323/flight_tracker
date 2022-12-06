@@ -25,6 +25,7 @@ urlpatterns = [
     path('add_airport', views.add_airport, name='add_airport'),
     path('view_ratings', views.view_ratings, name='view_ratings'),
     path('view_frequent_customers', views.view_frequent_customers, name='view_frequent_customers'),
+    path('view_customer_flights', views.view_customer_flights, name='view_customer_flights'),
     path('view_reports', views.view_reports, name='view_reports'),
     path('view_earned_revenue', views.view_earned_revenue, name='view_earned_revenue'),
 ]                    

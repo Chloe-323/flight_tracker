@@ -1,0 +1,45 @@
+{% extends "website/base.html" %}
+{% block content %}
+    <h1 class="title">My Spending</h1>
+    {% if tickets %}
+        <table class="table is-fullwidth">
+            <thead>
+                <tr>
+                    <th>Airline</th>
+                    <th>Flight Number</th>
+                    <th>Purchase Date</th>
+                    <th>Departure Date</th>
+                    <th>Arrival Date</th>
+                    <th>Departure Airport</th>
+                    <th>Arrival Airport</th>
+                    <th>Price Paid</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ticket in tickets %}
+                    <tr>
+                        <td>{{ ticket.airline }}</td>
+                        <td>{{ ticket.flight_number }}</td>
+                        <td>{{ ticket.purchase_date }}</td>
+                        <td>{{ ticket.departure_date }}</td>
+                        <td>{{ ticket.arrival_date }}</td>
+                        <td>{{ ticket.departure_airport }}</td>
+                        <td>{{ ticket.arrival_airport }}</td>
+                        <td>{{ ticket.price_paid }}</td>
+                        <td>
+                            <form action="/cancel_trip" method="GET">
+                                <input type="hidden" name="ticket_id" value="{{ ticket.ticket_id }}">
+                                <button class="button is-danger is-small" type="submit">Cancel</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <h2 class="subtitle">Total Spent:</h2>
+        <h1 class="title">$ {{amount_spent}}</h1>
+    {% else %}
+        <p>No flights found.</p>
+    {% endif %}
+{% endblock %}

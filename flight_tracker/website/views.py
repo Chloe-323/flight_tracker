@@ -6,6 +6,7 @@ from django.contrib.auth import authenticate, login, logout
 import hashlib    
 import random
 import datetime    
+import time
 import pytz
 from django.db import models    
 from .models import *    
@@ -248,6 +249,7 @@ def my_flights(request):
     results = Ticket.objects.filter(
             customer__email=request.session['username']
             )
+    print(results, flush=True)
     for result in results:
         context['flights'].append({
             'airline': result.flight.airline.name,
@@ -335,8 +337,7 @@ def purchase_tickets(request):
                     card_number=request.POST['cc_no'],
                     expiration_date=request.POST['exp_date'],
                     security_code=request.POST['cvv'],
-                    purchase_time=datetime.datetime.now(),
-                    purchase_date=datetime.datetime.today(),
+                    purchase_date=datetime.datetime.now(),
                     )
             ticket.save()
             return redirect('my_flights')
@@ -450,6 +451,8 @@ def rate(request):
                 'status': ticket.flight.status,
                 'ticket_id': ticket.ticket_id,
             }
+            context['default_rating'] = 5
+            return render(request, 'website/rate.html', context)
         elif 'rating_id' in request.GET and request.GET['rating_id'] != '':
             try:
                 rating = Rating.objects.get(
@@ -472,6 +475,7 @@ def rate(request):
                 'arrival': flight.arrival_date.date(),
                 'status': flight.status,
             }
+            context['default_rating'] = rating.rating
             return render(request, 'website/rate.html', context)
         else:
             return redirect('my_flights')
@@ -483,9 +487,15 @@ def rate(request):
                         ticket_id=request.POST['ticket_id']
                         )
             except:
-                return redirect('my_flights')
+                print('ticket not found', flush=True)
+                return redirect('my_ratings')
             if ticket.customer.email != request.session['username']:
-                return redirect('my_flights')
+                print('customer mismatch')
+                return redirect('my_ratings')
+            if Rating.objects.filter(flight=ticket.flight, customer=ticket.customer).exists():
+                print('rating already exists')
+                return redirect('my_ratings')
+
             #Create rating object
             rating = Rating(
                     flight=ticket.flight,
@@ -494,9 +504,20 @@ def rate(request):
                     customer=ticket.customer,
                     )
             rating.save()
-            return redirect('my_flights')
+            return redirect('my_ratings')
+        elif 'rating_id' in request.POST and request.POST['rating_id'] != '':
+            try:
+                rating = Rating.objects.get(rating_id=request.POST['rating_id'])
+            except:
+                return redirect('my_ratings')
+            if rating.customer.email != request.session['username']:
+                return redirect('my_flights')
+            rating.rating = request.POST['rating']
+            rating.comment = request.POST['comment']
+            rating.save()
+            return redirect('my_ratings')
         else:
-            return redirect('my_flights')
+            return redirect('my_ratings')
 
     return render(request, 'website/rate.html', context)
 
@@ -531,7 +552,39 @@ def my_ratings(request):
         return render(request, 'website/my_ratings.html', context)
 
 def track_spending(request):    
-    return render(request, 'website/track_spending.html')
+    context = {}
+    context['title'] = 'Track Spending'
+    context['flights'] = []
+    if request.session.get('username') is not None:
+        context['username'] = request.session['username']
+        if request.session['type'] == 'customer':
+            context['type'] = 'customer'
+        elif request.session['type'] == 'airline_staff':
+            context['type'] = 'airline_staff'
+        else:
+            context['type'] = 'error'
+    else:
+        return redirect('login')
+    if context['type'] != 'customer':
+        return redirect('login')
+
+    tickets = Ticket.objects.filter(customer__email=request.session['username'])
+    context['tickets'] = []
+    context['amount_spent'] = 0
+    for ticket in tickets:
+        context['tickets'].append({
+            'ticket_id': ticket.ticket_id,
+            'flight_number': ticket.flight.flight_number,
+            'airline': ticket.flight.airline.name,
+            'purchase_date': datetime.datetime.strftime(ticket.purchase_date, '%Y-%m-%d %H:%M'),
+            'departure_date': datetime.datetime.strftime(ticket.flight.departure_date, '%Y-%m-%d %H:%M'),
+            'arrival_date': datetime.datetime.strftime(ticket.flight.arrival_date, '%Y-%m-%d %H:%M'),
+            'departure_airport': ticket.flight.departure_airport.name,
+            'arrival_airport': ticket.flight.arrival_airport.name,
+            'price_paid': ticket.sold_price,
+            })
+        context['amount_spent'] += ticket.sold_price
+    return render(request, 'website/track_spending.html', context)
 
 # Airline Staff Use Cases
 
@@ -633,7 +686,7 @@ def create_flight(request):
             print(airplane.airplane_id, flush=True)
             context['airplanes'].append(airplane.airplane_id)
             print(context['airplanes'], flush=True)
-        context['flight_no'] = f'FL{Flight.objects.count() + 1:04d}'
+        context['flight_no'] = f'FL{Flight.objects.count() + 1:06d}'
         return render(request, 'website/create_flight.html', context)
     elif request.method != 'POST':
         return HttpResponse('Invalid request method')
@@ -645,7 +698,7 @@ def create_flight(request):
             return redirect('create_flight')
     flight = Flight(
         airline=AirlineStaff.objects.get(username=request.session['username']).airline,
-        flight_number=f'{Flight.objects.count() + 1:04d}',
+        flight_number=f'FL{Flight.objects.count() + 1:06d}',
         departure_airport=Airport.objects.get(name=request.POST['departure_airport']),
         arrival_airport=Airport.objects.get(name=request.POST['arrival_airport']),
         departure_date=datetime.datetime.strptime(request.POST['departure_date'] + ' ' + request.POST['departure_time'], '%Y-%m-%d %H:%M'),
@@ -734,7 +787,7 @@ def add_airplane(request):
         return redirect('login')
 
     if request.method == 'GET':
-        context['airplane_id'] = f'PL{Airplane.objects.count() + 1:08d}'
+        context['airplane_id'] = f'PL{Airplane.objects.count() + 1:04d}'
         return render(request, 'website/add_airplane.html', context)
     elif request.method != 'POST':
         return HttpResponse('Invalid request method')
@@ -821,10 +874,158 @@ def view_ratings(request):
     return render(request, 'website/view_ratings.html', context)
 
 def view_frequent_customers(request):    
-    return render(request, 'website/view_customers.html')
+    """
+    View the most frequent customer for the past year.
+    Also (somehow) view # of flights for each customer.
+    """
+    context = {}
+    context['title'] = 'Frequent Customers'
+    context['flights'] = []
+    if request.session.get('username') is not None:
+        context['username'] = request.session['username']
+        if request.session['type'] == 'customer':
+            context['type'] = 'customer'
+        elif request.session['type'] == 'airline_staff':
+            context['type'] = 'airline_staff'
+        else:
+            context['type'] = 'error'
+    else:
+        return redirect('login')
+    if context['type'] != 'airline_staff':
+        return redirect('login')
 
+    customers = Customer.objects.all()
+    #if no customers:
+    if len(customers) == 0:
+        return render(request, 'website/view_frequent_customers.html', context)
+
+    context['customers'] = []
+    for customer in customers:
+        if Ticket.objects.filter(customer=customer).count() > 0:
+            context['customers'].append({
+                'name': customer.fname + ' ' + customer.lname,
+                'last_month': Ticket.objects.filter(customer=customer, flight__departure_date__gte=datetime.datetime.now() - datetime.timedelta(days=30)).count(),
+                'last_year': Ticket.objects.filter(customer=customer, flight__departure_date__gte=datetime.datetime.now() - datetime.timedelta(days=365)).count(),
+                'username': customer.email,
+                })
+    context['customers'] = sorted(context['customers'], key=lambda x: x['last_year'], reverse=True)
+    context['most_frequent'] = context['customers'][0]['name']
+    context['most_frequent_flights'] = context['customers'][0]['last_year']
+
+    return render(request, 'website/view_frequent_customers.html', context)
+
+def view_customer_flights(request):
+    context = {}
+    context['title'] = 'Customer Flights'
+    context['flights'] = []
+    if request.session.get('username') is not None:
+        context['username'] = request.session['username']
+        if request.session['type'] == 'customer':
+            context['type'] = 'customer'
+        elif request.session['type'] == 'airline_staff':
+            context['type'] = 'airline_staff'
+        else:
+            context['type'] = 'error'
+    else:
+        return redirect('login')
+    if context['type'] != 'airline_staff':
+        return redirect('login')
+
+    if request.method != 'GET':
+        return redirect('view_flights')
+    if 'customer' not in request.GET or request.GET['customer'] == '':
+        return redirect('view_flights')
+    customer = Customer.objects.get(email=request.GET['customer'])
+    tickets = Ticket.objects.filter(customer=customer)
+    context['flights'] = []
+    for ticket in tickets:
+        context['flights'].append({
+            'flight_no': ticket.flight.flight_number,
+            'departure': ticket.flight.departure_airport.name,
+            'arrival': ticket.flight.arrival_airport.name,
+            'departure_date': ticket.flight.departure_date,
+            'arrival_date': ticket.flight.arrival_date,
+            'purchase_date': datetime.datetime.strftime(ticket.purchase_date, '%Y-%m-%d'),
+            'price': ticket.sold_price,
+            })
+    context['customer_name'] = customer.fname + ' ' + customer.lname
+    return render(request, 'website/view_customer_flights.html', context)
+    
 def view_reports(request):    
-    return render(request, 'website/view_reports.html')
+    context = {}
+    context['title'] = 'Reports'
+    context['flights'] = []
+    if request.session.get('username') is not None:
+        context['username'] = request.session['username']
+        if request.session['type'] == 'customer':
+            context['type'] = 'customer'
+        elif request.session['type'] == 'airline_staff':
+            context['type'] = 'airline_staff'
+        else:
+            context['type'] = 'error'
+    else:
+        return redirect('login')
+    if context['type'] != 'airline_staff':
+        return redirect('login')
+
+    #get last 12 months
+    now = time.localtime()
+    #set now to 2 months ago
+    #now = time.localtime(time.mktime((now.tm_year, now.tm_mon-2, now.tm_mday, now.tm_hour, now.tm_min, now.tm_sec, now.tm_wday, now.tm_yday, now.tm_isdst)))
+    months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+    context['months'] = [time.localtime(time.mktime((now.tm_year, now.tm_mon - n, 1, 0, 0, 0, 0, 0, 0)))[:2] for n in range(12)]
+    context['months'] = [str(months[month - 1]) + ' ' + str(year) for (year, month) in context['months']]
+    context['months'].reverse()
+    print(context['months'], flush=True)
+
+    context['counts'] = [0 for _ in range(12)]
+    tickets = Ticket.objects.all()
+    for ticket in tickets:
+        ticket.month = str(ticket.flight.departure_date.month)
+        context['counts'][int(ticket.month) - 1] += 1
+    #context['counts'].reverse()
+    print(context['counts'], flush=True)
+
+    return render(request, 'website/view_reports.html', context)
 
 def view_earned_revenue(request):    
-    return render(request, 'website/view_earned_revenue.html')
+    context = {}
+    context['title'] = 'Ratings'
+    context['flights'] = []
+    if request.session.get('username') is not None:
+        context['username'] = request.session['username']
+        if request.session['type'] == 'customer':
+            context['type'] = 'customer'
+        elif request.session['type'] == 'airline_staff':
+            context['type'] = 'airline_staff'
+        else:
+            context['type'] = 'error'
+    else:
+        return redirect('login')
+    if context['type'] != 'airline_staff':
+        return redirect('login')
+
+    tickets = Ticket.objects.filter(flight__airline=AirlineStaff.objects.get(username=request.session['username']).airline)
+    context['tickets'] = []
+    context['total_revenue'] = 0
+    context['last_month_revenue'] = 0
+    context['last_year_revenue'] = 0
+    for ticket in tickets:
+        context['tickets'].append({
+            'customer_name': ticket.customer.fname + ' ' + ticket.customer.lname,
+            'flight_number': ticket.flight.flight_number,
+            'purchase_date': datetime.datetime.strftime(ticket.purchase_date, '%Y-%m-%d') + ' ' + datetime.datetime.strftime(ticket.purchase_date, '%H:%M'),
+            'departure_date': datetime.datetime.strftime(ticket.flight.departure_date, '%Y-%m-%d %H:%M'),
+            'arrival_date': datetime.datetime.strftime(ticket.flight.arrival_date, '%Y-%m-%d %H:%M'),
+            'departure_airport': ticket.flight.departure_airport.name,
+            'arrival_airport': ticket.flight.arrival_airport.name,
+            'price_paid': ticket.sold_price,
+            })
+        #if purchased within the past 30 days
+        if ticket.flight.departure_date > utc.localize(datetime.datetime.now() - datetime.timedelta(days=30)):
+            context['last_month_revenue'] += ticket.sold_price
+        #if purchased within 365 days
+        if ticket.flight.departure_date > utc.localize(datetime.datetime.now() - datetime.timedelta(days=365)):
+            context['last_year_revenue'] += ticket.sold_price
+        context['total_revenue'] += ticket.sold_price
+    return render(request, 'website/view_earned_revenue.html', context)

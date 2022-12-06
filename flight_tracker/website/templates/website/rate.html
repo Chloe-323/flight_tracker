@@ -32,7 +32,7 @@
                         <div class="box">
                             <h1 class="title" align="center">Please Enter your Rating</h1>
                         <form action="/rate" method="POST">
-                            <jsuites-rating value="1" tooltip="1, 2, 3, 4, 5"></jsuites-rating>
+                            <jsuites-rating value="{{default_rating}}" tooltip="1, 2, 3, 4, 5"></jsuites-rating>
                             <input type="hidden" name="rating" id="rating" value="5">
                             <input type="hidden" name="rating_id" value="{{ rating_id }}">
                             <script>

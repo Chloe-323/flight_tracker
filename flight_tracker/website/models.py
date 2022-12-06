@@ -61,8 +61,7 @@ class Ticket(models.Model):
     card_number = models.CharField(max_length=16)
     expiration_date = models.DateField()
     security_code = models.CharField(max_length=4)
-    purchase_date = models.DateField()
-    purchase_time = models.TimeField()
+    purchase_date = models.DateTimeField()
 
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
     flight = models.ForeignKey(Flight, on_delete=models.CASCADE)
