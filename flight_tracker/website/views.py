@@ -10,9 +10,14 @@ import time
 import pytz
 from django.db import models    
 from .models import *    
+import base64
 from django.contrib.auth.models import User 
 
 utc=pytz.UTC
+
+
+def bleach_sql(s):
+    return s.replace(';', '').replace('--', '').replace('/*', '').replace('*/', '').replace('=', '').replace('\'', '').replace('"', '').replace('`', '')
 
 def index(request):    
     context = {}
@@ -28,7 +33,7 @@ def index(request):
             context['type'] = 'airline_staff'
         else:
             context['type'] = 'error'
-    for flight in Flight.objects.all():
+    for flight in Flight.objects.raw('SELECT * FROM website_flight ORDER BY departure_date DESC'):
         context['flights'].append({
             'airline': flight.airline.name,
             'flight_no': flight.flight_number,
@@ -51,11 +56,14 @@ def login(request):
     password = request.POST['password']
 
 #Try customer by email 
-    customer = Customer.objects.filter(email=username)
-    if customer.exists():
-        salt = customer.first().password_salt
+#    customer = Customer.objects.filter(email=username)
+    customer = Customer.objects.raw(f'SELECT * FROM website_customer WHERE email = "{bleach_sql(username)}"')
+    print(customer, flush=True)
+    print(len(customer), flush=True)
+    if len(customer) == 1:
+        salt = customer[0].password_salt
         hashed_password = hashlib.sha256((password + salt).encode('utf-8')).hexdigest()
-        if hashed_password == customer.first().password_hash:
+        if hashed_password == customer[0].password_hash:
             request.session['username'] = username
             request.session['type'] = 'customer'
             return redirect('my_flights')
@@ -63,11 +71,12 @@ def login(request):
             return render(request, 'website/login.html', {'error_message': 'Invalid username or password'})
 
 #Try airline staff by username
-    airline_staff = AirlineStaff.objects.filter(username=username)
-    if airline_staff.exists():
-        salt = airline_staff.first().password_salt
+#    airline_staff = AirlineStaff.objects.filter(username=username)
+    airline_staff = AirlineStaff.objects.raw(f'SELECT * FROM website_airlinestaff WHERE username = "{bleach_sql(username)}"')
+    if len(airline_staff) == 1:
+        salt = airline_staff[0].password_salt
         hashed_password = hashlib.sha256((password + salt).encode('utf-8')).hexdigest()
-        if hashed_password == airline_staff.first().password_hash:
+        if hashed_password == airline_staff[0].password_hash:
             request.session['username'] = username
             request.session['type'] = 'airline_staff'
             return redirect('view_flights')
@@ -141,19 +150,11 @@ def search(request):
     results = None
 
     if 'q' in request.GET and request.GET['q'] != '': #Catch-all query
-        results = Flight.objects.filter(
-            departure_airport__name__icontains=request.GET['q'] # Departure airport name
-        ) | Flight.objects.filter(
-            arrival_airport__name__icontains=request.GET['q'] # Arrival airport name
-        ) | Flight.objects.filter(
-            airline__name__icontains=request.GET['q'] # Airline name
-        ) | Flight.objects.filter(
-            flight_number__icontains=request.GET['q'] # Flight number
-        ) | Flight.objects.filter( # Destination city
-            arrival_airport__city__icontains=request.GET['q']
-        ) | Flight.objects.filter( # Origin city
-            departure_airport__city__icontains=request.GET['q']
-        )
+        results = Flight.objects.raw('''
+        SELECT *
+        FROM website_flight NATURAL_JOIN website_airport AS origin NATURAL_JOIN website_airport AS destination
+        WHERE airline LIKE "%{request.get['q']}%"
+        ''')
 
         for result in results:
             context['flights'].append({
@@ -1006,6 +1007,12 @@ def view_earned_revenue(request):
         return redirect('login')
 
     tickets = Ticket.objects.filter(flight__airline=AirlineStaff.objects.get(username=request.session['username']).airline)
+#   tickets = Ticket.objects.raw(f'''
+#       SELECT *
+#       FROM website_ticket NATURAL JOIN website_flight NATURAL JOIN website_airlinestaff
+#       WHERE username = '{request.session['username']}'
+#       AND 
+#   ''')
     context['tickets'] = []
     context['total_revenue'] = 0
     context['last_month_revenue'] = 0
