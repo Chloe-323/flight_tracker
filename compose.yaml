@@ -1,0 +1,30 @@
+services:
+  website:
+    build: flight_tracker 
+    image: flight_tracker 
+    ports:
+      - "8000:8000"
+    links:
+      - db
+    networks:
+      - internal
+    environment:
+      - POSTGRES_NAME=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+  db:
+    image: postgres
+    restart: always
+    volumes:
+      - ./data/db:/var/lib/portgresql/data
+    expose:
+      - "5432"
+    environment:
+      - POSTGRES_NAME=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+    networks:
+      - internal
+
+networks:
+  internal: {}
