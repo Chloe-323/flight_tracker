@@ -80,6 +80,8 @@ def setup(request):
         INSERT INTO website_airport (name, city, country, airport_type) VALUES ('SYD', 'Sydney', 'AU', 'International');
         """)
         cursor.execute(f"""
+        INSERT INTO website_airplane (airplane_id, airline_id, seats, manufacturer, date_built) VALUES ('PL0001', 'Lufthansa', 200, 'Boeing', '2010-01-01');
+        INSERT INTO website_airplane (airplane_id, airline_id, seats, manufacturer, date_built) VALUES ('PL0002', 'Air France', 200, 'Boeing', '2010-01-01');
         INSERT INTO website_airplane (airplane_id, airline_id, seats, manufacturer, date_built) VALUES ('PL0003', 'Delta', 200, 'Boeing', '2010-01-01');
         INSERT INTO website_airplane (airplane_id, airline_id, seats, manufacturer, date_built) VALUES ('PL0004', 'Delta', 220, 'Boeing', '2010-01-01');
         INSERT INTO website_airplane (airplane_id, airline_id, seats, manufacturer, date_built) VALUES ('PL0005', 'American Airlines', 200, 'Boeing', '2010-01-01');
