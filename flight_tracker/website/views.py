@@ -102,6 +102,35 @@ def register(request):
     for field in request.POST:
         if request.POST[field] == '':
             return render(request, 'website/register.html', {'error_message': 'All fields are required'})
+    if ('email' not in request.POST or
+        'password' not in request.POST or
+        'confirm_password' not in request.POST or
+        'fname' not in request.POST or
+        'lname' not in request.POST or
+        'dob' not in request.POST or
+        'building_number' not in request.POST or
+        'street' not in request.POST or
+        'city' not in request.POST or
+        'state' not in request.POST or
+        'phone' not in request.POST or
+        'passport_number' not in request.POST or
+        'passport_expiration' not in request.POST or
+        'country' not in request.POST):
+        return render(request, 'website/register.html', {'error_message': 'Please fill in all fields'})
+    if '@' not in request.post['email'] or '.' not in request.post['email']:
+        return render(request, 'website/register.html', {'error_message': 'Please enter a valid email'})
+    if request.POST['password'] != request.POST['confirm_password']:
+        return render(request, 'website/register.html', {'error_message': 'Passwords do not match'})
+    if request.POST['dob'] > datetime.datetime.now().date():
+        return render(request, 'website/register.html', {'error_message': 'Please enter a valid date of birth'})
+    if request.POST['passport_expiration'] < datetime.datetime.now().date():
+        return render(request, 'website/register.html', {'error_message': 'Please enter a valid passport'})
+    if len(request.POST['phone']) != 10:
+        return render(request, 'website/register.html', {'error_message': 'Please enter a valid phone number'})
+    with connection.cursor() as cursor:
+        cursor.execute('SELECT * FROM website_customer WHERE email = %s', [request.POST['email']])
+        if cursor.fetchone() is not None:
+            return render(request, 'website/register.html', {'error_message': 'Email already exists'})
 
     # Create customer
     salt = "".join([random.choice("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz") for i in range(32)])
@@ -306,7 +335,12 @@ def purchase_tickets(request):
         return redirect('login')
 
     #Find fname and lname of customer
-    customer = Customer.objects.get(email=request.session['username'])
+    customer = Customer.objects.raw(f'''
+    SELECT *
+    FROM website_customer
+    WHERE email = "{request.session['username']}"
+    ;
+    ''')[0]
     context['fname'] = customer.fname
     context['lname'] = customer.lname
 
@@ -338,9 +372,14 @@ def purchase_tickets(request):
     elif request.method == 'POST':
         if 'flight_no' in request.POST and request.POST['flight_no'] != '':
             try:
-                flight = Flight.objects.get(
-                        flight_number=request.POST['flight_no']
-                        )
+                flight = Flight.objects.raw(f'''
+                SELECT *
+                FROM website_flight
+                WHERE flight_number = "{bleach_sql(request.POST['flight_no'])}"
+                ;
+                ''')[0]
+                if flight is None:
+                    return redirect('search')
             except:
                 return redirect('search')
             #Validate CC info
@@ -1255,14 +1294,14 @@ def view_earned_revenue(request):
     if context['type'] != 'airline_staff':
         return redirect('login')
 
-    tickets = Ticket.objects.filter(flight__airline=AirlineStaff.objects.get(username=request.session['username']).airline)
-#   tickets = Ticket.objects.raw(f'''
-#   SELECT *
-#   FROM website_ticket JOIN website_flight ON website_ticket.flight_id = website_flight.flight_number
-#   WHERE website_flight.airline_id IN (
-#       SELECT airline_id FROM website_airlinestaff WHERE username = "{bleach_sql(request.session['username'])}"
-#       );
-#   ''')
+#    tickets = Ticket.objects.filter(flight__airline=AirlineStaff.objects.get(username=request.session['username']).airline)
+    tickets = Ticket.objects.raw(f'''
+    SELECT *
+    FROM website_ticket JOIN website_flight ON website_ticket.flight_id = website_flight.flight_number
+    WHERE website_flight.airline_id IN (
+        SELECT airline_id FROM website_airlinestaff WHERE username = "{bleach_sql(request.session['username'])}"
+        );
+    ''')
     context['tickets'] = []
     context['total_revenue'] = 0
     context['last_month_revenue'] = 0
