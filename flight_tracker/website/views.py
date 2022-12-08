@@ -474,6 +474,17 @@ def purchase_tickets(request):
             if 'cvv' not in request.POST or request.POST['cvv'] == '':
                 print('No CC cvv', flush=True)
                 return redirect('search')
+            with connection.cursor() as cursor:
+                count = cursor.execute(f"""
+                SELECT COUNT(*)
+                FROM website_ticket
+                WHERE flight_id = '{request.POST['flight_no']}'
+                ;
+                """)
+                count = cursor.fetchone()[0]
+                if count >= flight.airplane.seats:
+                    print('No seats available', flush=True)
+                    return redirect('search')
 
             #Create ticket
             with connection.cursor() as cursor:
@@ -667,7 +678,7 @@ def rate(request):
             with connection.cursor() as cursor:
                 cursor.execute(f"""
                     INSERT INTO website_rating (rating, comment, customer_id, flight_id)
-                    VALUES ({bleach_sql(request.POST['rating'])}, '{bleach_sql(request.POST['comment'])}', '{request.session['username']}', '{ticket.flight.flight_id}')
+                    VALUES ({bleach_sql(request.POST['rating'])}, '{bleach_sql(request.POST['comment'])}', '{request.session['username']}', '{ticket.flight.flight_number}')
                     ;
                     """)
 #           rating = Rating(
@@ -711,7 +722,7 @@ def my_ratings(request):
         return redirect('login')
 
     if request.method == 'GET':
-        ratings = Rating.objectgs.raw(f"""
+        ratings = Rating.objects.raw(f"""
         SELECT * FROM website_rating
         WHERE customer_id = '{request.session['username']}'
         ;
@@ -948,8 +959,8 @@ def create_flight(request):
         base_price
         ) VALUES (
         '{flight_num}',
-        '{bleach_sql(request.POST['departure_airport'])}',
-        '{bleach_sql(request.POST['arrival_airport'])}',
+        '{bleach_sql(request.POST['departure_airport'].split(' (')[0])}',
+        '{bleach_sql(request.POST['arrival_airport'].split(' (')[0])}',
         '{bleach_sql(request.POST['departure_date'] + ' ' + request.POST['departure_time'])}',
         '{bleach_sql(request.POST['arrival_date'] + ' ' + request.POST['arrival_time'])}',
         '{bleach_sql(request.POST['status'])}',
@@ -1009,7 +1020,7 @@ def update_flight(request):
         """):
             context['airplanes'].append(airplane.airplane_id)
         context['flight_no'] = request.GET['flight_no']
-        flight = Flight.objects.get(flight_number=request.GET['flight_no'], airline=AirlineStaff.objects.get(username=request.session['username']).airline)
+#        flight = Flight.objects.get(flight_number=request.GET['flight_no'], airline=AirlineStaff.objects.get(username=request.session['username']).airline)
         flight = Flight.objects.raw(f"""
         SELECT *
         FROM website_flight
@@ -1210,6 +1221,11 @@ def view_ratings(request):
             return redirect('view_flights')
         flight = Flight.objects.get(flight_number=request.GET['flight_no'], airline=AirlineStaff.objects.get(username=request.session['username']).airline)
         ratings = Rating.objects.filter(flight=flight)
+        ratings = Rating.objects.raw(f"""
+        SELECT * FROM website_rating WHERE flight_id IN (
+        SELECT flight_id FROM website_flight WHERE flight_number = '{request.GET['flight_no']}' AND airline_id = (SELECT airline_id FROM website_airlinestaff WHERE username = '{request.session['username']}')
+        );
+        """)
         
         context['ratings'] = []
         context['flight_no'] = flight.flight_number
